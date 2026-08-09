@@ -1,0 +1,19 @@
+{
+  "name": "print",
+  "description": "DRAFT, not visually approved. A light palette for print/PDF export (v1.5 roadmap). Placeholder colours only — needs a real design pass before use, unlike default/dark which are the locked baseline.",
+  "colors": {
+    "bg": "#ffffff",
+    "panel": "#f4f6f8",
+    "panel_alt": "#eef1f4",
+    "blue": "#1d6fb8",
+    "orange": "#c96a00",
+    "green": "#4f8f1f",
+    "white": "#12181d",
+    "muted": "#5a6470",
+    "grey": "#8a9198",
+    "line": "#c7ccd1",
+    "gold": "#96762f",
+    "grid": "#dfe4e8",
+    "legend_bg": "#e8ecef"
+  }
+}

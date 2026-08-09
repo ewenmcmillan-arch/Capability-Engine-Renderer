@@ -1,0 +1,19 @@
+{
+  "name": "default",
+  "description": "The locked v1.2 dark palette. Do not change without a deliberate, versioned redesign — see Capability_Snapshot_Renderer_Memory_Locked_Baseline.md.",
+  "colors": {
+    "bg": "#02070c",
+    "panel": "#06111a",
+    "panel_alt": "#07131d",
+    "blue": "#2599f3",
+    "orange": "#ff970f",
+    "green": "#78c72d",
+    "white": "#f3f6f8",
+    "muted": "#b9c0c7",
+    "grey": "#c4c9ce",
+    "line": "#52606a",
+    "gold": "#d8b55b",
+    "grid": "#173044",
+    "legend_bg": "#04101a"
+  }
+}

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="capability_renderer tests">
+  <trk><name>Test Run</name><trkseg>
+    <trkpt lat="51.5007" lon="-0.1246"><ele>10.0</ele><time>2026-07-31T07:00:00Z</time>
+      <extensions><gpxtpx:TrackPointExtension xmlns:gpxtpx="x"><gpxtpx:hr>128</gpxtpx:hr><gpxtpx:cad>82</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+    <trkpt lat="51.5012" lon="-0.1238"><ele>12.0</ele><time>2026-07-31T07:02:00Z</time>
+      <extensions><gpxtpx:TrackPointExtension xmlns:gpxtpx="x"><gpxtpx:hr>134</gpxtpx:hr><gpxtpx:cad>84</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+    <trkpt lat="51.5019" lon="-0.1229"><ele>15.0</ele><time>2026-07-31T07:04:00Z</time>
+      <extensions><gpxtpx:TrackPointExtension xmlns:gpxtpx="x"><gpxtpx:hr>140</gpxtpx:hr><gpxtpx:cad>85</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+    <trkpt lat="51.5026" lon="-0.1218"><ele>13.0</ele><time>2026-07-31T07:06:00Z</time>
+      <extensions><gpxtpx:TrackPointExtension xmlns:gpxtpx="x"><gpxtpx:hr>142</gpxtpx:hr><gpxtpx:cad>83</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+    <trkpt lat="51.5033" lon="-0.1207"><ele>11.0</ele><time>2026-07-31T07:08:00Z</time>
+      <extensions><gpxtpx:TrackPointExtension xmlns:gpxtpx="x"><gpxtpx:hr>138</gpxtpx:hr><gpxtpx:cad>81</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+    <trkpt lat="51.5040" lon="-0.1196"><ele>10.0</ele><time>2026-07-31T07:10:00Z</time>
+      <extensions><gpxtpx:TrackPointExtension xmlns:gpxtpx="x"><gpxtpx:hr>130</gpxtpx:hr><gpxtpx:cad>80</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>
+  </trkseg></trk>
+</gpx>
