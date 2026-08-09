@@ -19,6 +19,12 @@ CARD_LAYOUT_VERSION = "1.2"  # the locked visual layout this renderer reproduces
 
 ASSET_DIR = Path(__file__).resolve().parent / "assets"
 THEME_DIR = ASSET_DIR / "themes"
+LOGO_DIR = ASSET_DIR / "logos"
+
+MASTER_LOGO_PATH = LOGO_DIR / "capability_master.png"
+FAVICON_PATH = LOGO_DIR / "favicon.png"
+WATERMARK_DARK_PATH = LOGO_DIR / "watermark_dark.png"
+WATERMARK_LIGHT_PATH = LOGO_DIR / "watermark_light.png"
 
 # Built-in fallback palette — used if no theme JSON is found on disk.
 # This is the exact palette from the locked v1.2 baseline.

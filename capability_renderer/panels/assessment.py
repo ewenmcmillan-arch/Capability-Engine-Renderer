@@ -5,12 +5,13 @@ from PIL import ImageDraw
 from .. import graphics
 from ..geometry import PANEL_BOXES
 from ..layout import wrap_text
+from ..theme import WATERMARK_DARK_PATH
 
 
 def render(img, draw: ImageDraw.ImageDraw, cfg: dict, metrics: dict, theme: dict, **_) -> ImageDraw.ImageDraw:
     box = PANEL_BOXES["assessment"]
     graphics.rounded_panel(draw, box, 18, theme["panel"], theme["orange"], 2)
-    graphics.watermark(img, (460, 314), 116, opacity=30)
+    graphics.watermark(img, (460, 314), 116, opacity=30, asset_path=WATERMARK_DARK_PATH)
     draw = ImageDraw.Draw(img)
 
     graphics.text(draw, (658, 160), "MISSION ASSESSMENT", 21, theme["orange"], True)

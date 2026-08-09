@@ -4,13 +4,13 @@ from PIL import ImageDraw
 
 from .. import graphics
 from ..geometry import PANEL_BOXES
-from ..theme import CARD_LAYOUT_VERSION
+from ..theme import CARD_LAYOUT_VERSION, MASTER_LOGO_PATH
 
 
 def render(img, draw: ImageDraw.ImageDraw, cfg: dict, metrics: dict, theme: dict, **_) -> ImageDraw.ImageDraw:
     box = PANEL_BOXES["footer"]
     graphics.rounded_panel(draw, box, 18, theme["panel"], theme["line"], 2)
-    graphics.crest(img, (58, 1563), 27, 225, gold=True)
+    graphics.logo(img, (58, 1563), 27, theme, asset_path=MASTER_LOGO_PATH, opacity=225, gold=True)
     draw = ImageDraw.Draw(img)
 
     graphics.text(draw, (96, 1542), "CAPABILITY ENGINE", 17, theme["white"], True)

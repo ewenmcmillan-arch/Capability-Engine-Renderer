@@ -123,6 +123,22 @@ def progress_ring_label(draw: ImageDraw.ImageDraw, box: Box, colour, percent_tex
         y += 23
 
 
-def watermark(target: Image.Image, centre: Point, radius: float, opacity: int = 30) -> None:
-    """Low-opacity crest behind panel text, per the locked design's watermark rule."""
+def watermark(target: Image.Image, centre: Point, radius: float, opacity: int = 30, asset_path=None) -> None:
+    """Low-opacity brand mark behind panel text.
+
+    Prefers a pre-baked watermark asset (assets/logos/watermark_dark.png
+    or watermark_light.png) — those are pre-blurred and pre-dimmed
+    specifically so the source artwork's fine detail/text doesn't
+    compete with whatever card text sits on top of them. Falls back
+    to the vector crest() if no asset is supplied, same as logo().
+    The `opacity` parameter only affects the crest() fallback; a
+    real watermark asset's opacity is already baked in at generation
+    time, not adjustable per-call.
+    """
+    if asset_path is not None and asset_path.exists():
+        art = Image.open(asset_path).convert("RGBA")
+        size = int(radius * 2)
+        art = art.resize((size, size), Image.LANCZOS)
+        target.alpha_composite(art, (int(centre[0] - radius), int(centre[1] - radius)))
+        return
     crest(target, centre, radius, opacity=opacity, gold=True)
