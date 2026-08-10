@@ -18,10 +18,18 @@ def render(img, draw: ImageDraw.ImageDraw, cfg: dict, metrics: dict, theme: dict
     for line in wrap_text(cfg["strength"], 330, 26, bold=True, max_lines=2):
         graphics.text(draw, (700, y), line, 26, theme["white"], True)
         y += 26 + 6
-    graphics.divider(draw, (700, 696, 1036, 696), theme["green"], 2)
+    # Divider position now derives from where STRENGTH's text actually
+    # ended, instead of a hardcoded y=696 — that value only looked right
+    # by coincidence for a single-line strength; a two-line strength
+    # (e.g. "Beat this route's previous pace") ran its text right up
+    # against the divider with no breathing room. +10 gives it space;
+    # everything below cascades from this point the same way NEXT FOCUS
+    # -> NOTES already did.
+    divider1_y = y - 6 + 10
+    graphics.divider(draw, (700, divider1_y, 1036, divider1_y), theme["green"], 2)
 
-    graphics.text(draw, (700, 728), "NEXT FOCUS", 17, theme["green"], True)
-    y = 762
+    graphics.text(draw, (700, divider1_y + 32), "NEXT FOCUS", 17, theme["green"], True)
+    y = divider1_y + 66
     for line in wrap_text(cfg["next_focus"], 330, 20, max_lines=4):
         graphics.text(draw, (700, y), line, 20, theme["white"])
         y += 20 + 8
