@@ -141,3 +141,20 @@ def budget_panel_height(blocks: Sequence[TextBlock], padding_bottom: int = 16) -
         return 0
     last = blocks[-1]
     return last.y + last.height + padding_bottom
+
+
+def lines_that_fit(start_y: int, box_bottom: int, line_height: int, margin: int = 20) -> int:
+    """How many lines fit between start_y and a panel's fixed bottom
+    edge, given a fixed line height.
+
+    For panels with multiple variable-length text sections stacked
+    in one fixed box (e.g. verdict.py's STRENGTH -> NEXT FOCUS ->
+    NOTES): a fixed max_lines on the last section overflows the
+    panel whenever an earlier section ran longer than usual, since
+    the last section's start_y shifts down but its line budget
+    didn't shrink to match. Always returns at least 1 so a caller
+    doesn't end up with an unusable 0-line budget from a single
+    off-by-one — better to overflow by one line than render nothing.
+    """
+    available = box_bottom - margin - start_y
+    return max(1, available // line_height)

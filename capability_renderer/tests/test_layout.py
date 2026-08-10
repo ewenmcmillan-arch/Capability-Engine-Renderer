@@ -1,4 +1,4 @@
-from capability_renderer.layout import fit_font_size, stack_blocks, wrap_text
+from capability_renderer.layout import fit_font_size, lines_that_fit, stack_blocks, wrap_text
 
 
 def test_wrap_text_short_string_stays_one_line():
@@ -32,3 +32,15 @@ def test_stack_blocks_increases_y_for_each_item():
     assert ys == sorted(ys)
     assert ys[0] == 100
     assert ys[1] > ys[0]
+
+
+def test_lines_that_fit_shrinks_as_start_y_approaches_bottom():
+    generous = lines_that_fit(start_y=700, box_bottom=1014, line_height=25)
+    tight = lines_that_fit(start_y=980, box_bottom=1014, line_height=25)
+    assert generous > tight
+    assert tight >= 1
+
+
+def test_lines_that_fit_never_returns_zero_even_when_already_past_bottom():
+    result = lines_that_fit(start_y=1200, box_bottom=1014, line_height=25)
+    assert result == 1

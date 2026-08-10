@@ -4,7 +4,7 @@ from PIL import ImageDraw
 
 from .. import graphics
 from ..geometry import PANEL_BOXES
-from ..layout import wrap_text
+from ..layout import lines_that_fit, wrap_text
 
 
 def render(img, draw: ImageDraw.ImageDraw, cfg: dict, metrics: dict, theme: dict, **_) -> ImageDraw.ImageDraw:
@@ -30,7 +30,15 @@ def render(img, draw: ImageDraw.ImageDraw, cfg: dict, metrics: dict, theme: dict
     graphics.text(draw, (700, y + 52), "NOTES", 17, theme["green"], True)
     notes = cfg.get("coach_notes", "Cadence solid. Heart rate well managed on the climbs. Good finish.")
     ny = y + 86
-    for line in wrap_text(notes, 330, 18, max_lines=5):
+    # Available lines depend on how much room STRENGTH/NEXT FOCUS already
+    # used above — a fixed max_lines=5 here overflowed the panel's fixed
+    # bottom edge (1014) whenever NEXT FOCUS ran to its own max of 4 lines,
+    # pushing NOTES lower than a fixed cap accounted for. Budget from the
+    # actual remaining space instead, same principle as
+    # layout.budget_panel_height().
+    line_height = 18 + 7
+    max_lines = lines_that_fit(ny, box[3], line_height)
+    for line in wrap_text(notes, 330, 18, max_lines=max_lines):
         graphics.text(draw, (700, ny), line, 18, theme["white"])
-        ny += 18 + 7
+        ny += line_height
     return draw

@@ -48,3 +48,35 @@ def test_new_panel_can_be_added_without_touching_others():
         sig = inspect.signature(module.render)
         params = list(sig.parameters)
         assert params[:3] == ["img", "draw", "cfg"]
+
+
+def test_verdict_panel_notes_never_overflow_the_box_bottom():
+    """Regression test for a real bug: a long next_focus (using its
+    full max_lines=4 budget) pushed the NOTES section's start_y down
+    enough that a fixed max_lines=5 on the notes text overflowed the
+    panel's bottom border — found by rendering a real run with a
+    longer-than-usual coach_notes string, not by synthetic testing."""
+    from capability_renderer.geometry import PANEL_BOXES
+    from capability_renderer.panels import verdict
+
+    img, draw, cfg, points, paces, theme = _setup()
+    cfg = dict(cfg)
+    cfg["next_focus"] = "Push the final mile closer to opening pace rather than fading, and keep cadence higher on the descents."
+    cfg["coach_notes"] = (
+        "Real GPX plus genuine Huawei Watch GT6 heart rate recovery synced via "
+        "Strava — the first render with real recovery data rather than the "
+        "'no data supplied' fallback, and a notably long note to stress-test "
+        "panel overflow handling."
+    )
+    verdict.render(img, draw, cfg, {}, theme)
+
+    box = PANEL_BOXES["verdict"]
+    # Sample the last few rows inside the panel, near its bottom edge —
+    # a green pixel there (the panel's own border colour) with no text
+    # drawn past it confirms nothing overflowed below box[3].
+    below_box = img.crop((box[0], box[3] + 3, box[2], box[3] + 20))
+    # A crude but effective check: text pixels are near-white (~243,246,248);
+    # confirm no such pixel exists in the strip just below the border.
+    px = below_box.convert("RGB").getdata()
+    white_ish = [p for p in px if p[0] > 200 and p[1] > 200 and p[2] > 200]
+    assert len(white_ish) == 0, f"Found {len(white_ish)} light/text-coloured pixels below the verdict panel's bottom border"
