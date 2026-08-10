@@ -4,7 +4,7 @@ from PIL import ImageDraw
 
 from .. import graphics
 from ..geometry import PANEL_BOXES
-from ..theme import CARD_LAYOUT_VERSION, MASTER_LOGO_PATH
+from ..theme import MASTER_LOGO_PATH
 
 
 def render(img, draw: ImageDraw.ImageDraw, cfg: dict, metrics: dict, theme: dict, **_) -> ImageDraw.ImageDraw:
@@ -18,5 +18,4 @@ def render(img, draw: ImageDraw.ImageDraw, cfg: dict, metrics: dict, theme: dict
     graphics.text(draw, (540, 1565), "CAPABILITY SNAPSHOT", 20, theme["gold"], True, anchor="ma")
     graphics.text(draw, (1034, 1543), cfg["report_id"], 14, theme["muted"], anchor="ra")
     graphics.text(draw, (1034, 1571), "Actual GPX-derived course trace", 13, theme["blue"], anchor="ra")
-    graphics.text(draw, (1034, 1591), f"Renderer v{CARD_LAYOUT_VERSION}", 12, theme["muted"], anchor="ra")
     return draw
