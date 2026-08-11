@@ -90,7 +90,14 @@ def render(config_path, gpx_path, output_path, theme_name: str = "default") -> P
     splits = cfg.get("splits") or metrics_mod.split_rows(points)
     hr_recovery = metrics_mod.hr_recovery(cfg)
     cadence = metrics_mod.cadence_summary(points)
-    computed_metrics = {"paces": paces, "splits": splits, "hr_recovery": hr_recovery, "cadence": cadence}
+    elevation = metrics_mod.elevation_summary(points)
+    computed_metrics = {
+        "paces": paces,
+        "splits": splits,
+        "hr_recovery": hr_recovery,
+        "cadence": cadence,
+        "elevation": elevation,
+    }
 
     # 4. Layout (panel boxes are the locked geometry; panels do their
     #    own internal text layout via layout.py as they draw)

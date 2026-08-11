@@ -14,9 +14,20 @@ def render(img, draw: ImageDraw.ImageDraw, cfg: dict, metrics: dict, theme: dict
     draw.line((972, 1246, 990, 1218, 1008, 1246), fill=theme["blue"], width=3)
     draw.line((990, 1246, 1012, 1226, 1034, 1246), fill=theme["blue"], width=3)
 
+    # Computed from the GPX (metrics.elevation_summary), not config text —
+    # elevation is derivable from the track in principle, unlike HR
+    # recovery, so there's no legitimate case for a human-supplied
+    # override here. "—" only when the GPX carries no elevation data
+    # at all (elevation_summary returns None for both fields then).
+    elevation = metrics.get("elevation", {})
+    gain_ft = elevation.get("gain_ft")
+    max_ft = elevation.get("max_ft")
+    gain_text = "—" if gain_ft is None else f"{gain_ft:.0f} ft"
+    max_text = "—" if max_ft is None else f"{max_ft:.0f} ft"
+
     graphics.text(draw, (802, 1284), "ELEVATION GAIN", 16, theme["muted"])
-    graphics.text(draw, (802, 1326), cfg.get("elevation_gain", "—"), 31, theme["white"], True)
+    graphics.text(draw, (802, 1326), gain_text, 31, theme["white"], True)
     graphics.divider(draw, (802, 1370, 1038, 1370), theme["blue"], 1)
     graphics.text(draw, (802, 1402), "MAX ELEVATION", 16, theme["muted"])
-    graphics.text(draw, (802, 1444), cfg.get("max_elevation", "—"), 31, theme["white"], True)
+    graphics.text(draw, (802, 1444), max_text, 31, theme["white"], True)
     return draw
