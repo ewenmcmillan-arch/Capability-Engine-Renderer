@@ -80,3 +80,27 @@ def test_verdict_panel_notes_never_overflow_the_box_bottom():
     px = below_box.convert("RGB").getdata()
     white_ish = [p for p in px if p[0] > 200 and p[1] > 200 and p[2] > 200]
     assert len(white_ish) == 0, f"Found {len(white_ish)} light/text-coloured pixels below the verdict panel's bottom border"
+
+
+def test_splits_panel_shows_all_rows_without_overflowing():
+    """Regression test: split_rows() used to hard-cap at 4 rows to
+    match the panel's fixed layout, silently dropping the back half
+    of any run longer than ~4 miles — found by rendering a real
+    8-mile run. The panel now shrinks row spacing/font to fit every
+    split rather than truncating, and must never overflow its box."""
+    from capability_renderer.geometry import PANEL_BOXES
+    from capability_renderer.panels import splits
+
+    img, draw, cfg, points, paces, theme = _setup()
+    cfg = dict(cfg)
+    cfg["splits"] = [
+        {"label": str(n), "pace": 540 + n, "elev": 10 - n, "hr": 130 + n}
+        for n in range(1, 9)  # 8 miles — the case that used to get truncated to 4
+    ]
+    splits.render(img, draw, cfg, {}, theme)
+
+    box = PANEL_BOXES["splits"]
+    below_box = img.crop((box[0], box[3] + 3, box[2], box[3] + 20))
+    px = below_box.convert("RGB").getdata()
+    white_ish = [p for p in px if p[0] > 200 and p[1] > 200 and p[2] > 200]
+    assert len(white_ish) == 0, f"Found {len(white_ish)} light/text-coloured pixels below the splits panel's bottom border"
