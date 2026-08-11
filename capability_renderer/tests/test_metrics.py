@@ -28,12 +28,49 @@ def test_smoothed_paces_returns_one_value_per_segment():
     assert any(p is not None for p in paces)
 
 
-def test_split_rows_covers_whole_route_in_at_most_four_rows():
+def test_split_rows_covers_whole_route():
     points = _points()
     rows = metrics.split_rows(points)
-    assert 1 <= len(rows) <= 4
+    assert len(rows) >= 1
     for row in rows:
         assert "label" in row and "pace" in row and "elev" in row and "hr" in row
+
+
+def test_split_rows_returns_one_row_per_mile_uncapped():
+    """split_rows() itself has no row-count cap — that's the splits
+    panel's display concern (see panels/splits.py), not a metrics
+    one. A synthetic 8-mile route should yield 8 full-mile rows plus
+    no partial-mile remainder (it lands exactly on a mile mark)."""
+    import datetime as dt
+    import math
+
+    from capability_renderer.metrics import MILE_METRES
+
+    start = dt.datetime(2026, 1, 1, tzinfo=dt.timezone.utc)
+    # Walk due north (no longitude change) so haversine distance is
+    # simple and predictable: for a pure latitude change it reduces to
+    # radius * delta_phi. Derive degrees-per-metre from the exact same
+    # radius geometry.haversine() uses, so mile marks land exactly.
+    metres_per_degree = 6_371_000 * math.pi / 180
+    points = []
+    for i in range(9):  # 0..8 miles, one point per mile mark
+        lat = i * (MILE_METRES / metres_per_degree)
+        points.append({
+            "lat": lat, "lon": 0.0,
+            "time": start + dt.timedelta(minutes=9 * i),
+            "ele": 100.0, "hr": 140, "cad": 160,
+        })
+    rows = metrics.split_rows(points)
+    # Row count is the actual regression concern here (used to be
+    # hard-capped at 4 regardless of distance). Only the first 7
+    # labels are asserted exactly — floating-point drift in the
+    # synthetic route's cumulative distance means the 8th can land a
+    # hair short of an exact mile mark, which correctly produces a
+    # fractional-mile label (e.g. "1.00") rather than "8". That's the
+    # same real-world behaviour a genuine GPX route has, since actual
+    # routes essentially never end on an exact mile boundary either.
+    assert len(rows) == 8
+    assert [r["label"] for r in rows[:7]] == [str(n) for n in range(1, 8)]
 
 
 def test_elevation_summary_reports_gain_and_max():

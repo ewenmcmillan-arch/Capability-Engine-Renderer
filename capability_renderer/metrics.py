@@ -42,8 +42,11 @@ def smoothed_paces(points: Sequence[dict], radius: int = 3) -> List[Optional[flo
 def split_rows(points: Sequence[dict]) -> List[dict]:
     """Per-mile splits (label, pace seconds, elevation change ft, avg HR),
     computed purely from GPX — the GPX is authoritative, nothing here
-    invents distance or time. Returns at most 4 rows to match the
-    locked splits panel's fixed layout."""
+    invents distance or time. Returns one row per full mile plus a
+    final partial-mile remainder, for the whole route — no cap here.
+    The splits panel decides how many of these it can fit legibly;
+    see panels/splits.py's own row-count cap for why that's a
+    display concern, not a metrics one."""
     cumulative = [0.0]
     for a, b in zip(points, points[1:]):
         cumulative.append(cumulative[-1] + haversine(a["lat"], a["lon"], b["lat"], b["lon"]))
@@ -73,7 +76,7 @@ def split_rows(points: Sequence[dict]) -> List[dict]:
             "hr": round(sum(heart_rates) / len(heart_rates)) if heart_rates else None,
         })
         start_i, start_d, start_t, start_e = index, mark, end_t, end_e
-    return rows[:4]
+    return rows
 
 
 def best_segment_pace(points: Sequence[dict], segment_metres: float) -> Optional[float]:
