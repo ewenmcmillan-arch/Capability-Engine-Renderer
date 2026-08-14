@@ -102,6 +102,33 @@ def fit_font_size(
     return min_size
 
 
+def fit_single_line(
+    value: str,
+    max_width: float,
+    max_size: int,
+    min_size: int = 10,
+    bold: bool = False,
+    condensed: bool = False,
+) -> tuple[str, int]:
+    """Shrink a font size to fit value on one line (via fit_font_size),
+    then — if it still doesn't fit even at min_size, which fit_font_size
+    alone can't guarantee for an arbitrarily long value — truncate with
+    an ellipsis at that floor size, the same way wrap_text() truncates
+    an overflowing last line. Two independent safety nets (shrink, then
+    truncate) rather than one, because a title/subtitle field has no
+    max_lines to fall back on the way wrapped body text does.
+    """
+    size = fit_font_size(value, max_width, max_size, min_size, bold, condensed)
+    f = typography.get_font(size, bold, condensed)
+    if typography.text_width(value, f) <= max_width:
+        return value, size
+
+    truncated = value
+    while truncated and typography.text_width(truncated + "…", f) > max_width:
+        truncated = truncated[:-1]
+    return (truncated + "…" if truncated else "…"), size
+
+
 def stack_blocks(
     items: Sequence[str],
     x: int,

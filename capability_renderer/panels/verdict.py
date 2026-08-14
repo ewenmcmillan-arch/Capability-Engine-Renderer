@@ -18,9 +18,17 @@ def render(img, draw: ImageDraw.ImageDraw, cfg: dict, metrics: dict, theme: dict
     graphics.text(draw, (700, 605 + offset), "STRENGTH", 17, theme["green"], True)
 
     y = 638 + offset
-    for line in wrap_text(cfg["strength"], 330, 26, bold=True, max_lines=2):
-        graphics.text(draw, (700, y), line, 26, theme["white"], True)
-        y += 26 + 6
+    # 22pt (not the original 26pt) and max_lines=5 (not 2) — the
+    # coaching schema asks for "one sentence" for strength, but a real
+    # AI-generated sentence routinely runs 4-5 lines at this panel's
+    # 330px width even at a smaller size; 26pt was calibrated for a
+    # short punchy phrase ("Beat previous PR") and wrapped a full
+    # sentence to 6-9 lines. The panel grows to fit via geometry.
+    # apply_dynamic_layout() (kept in sync with this size/max_lines),
+    # so there's no fixed-box reason to keep either tight.
+    for line in wrap_text(cfg["strength"], 330, 22, bold=True, max_lines=5):
+        graphics.text(draw, (700, y), line, 22, theme["white"], True)
+        y += 22 + 6
     # Divider position now derives from where STRENGTH's text actually
     # ended, instead of a hardcoded y=696 — that value only looked right
     # by coincidence for a single-line strength; a two-line strength
