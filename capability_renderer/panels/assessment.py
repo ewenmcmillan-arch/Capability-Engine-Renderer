@@ -22,11 +22,14 @@ def render(img, draw: ImageDraw.ImageDraw, cfg: dict, metrics: dict, theme: dict
     graphics.text(draw, (658, 360), "REASON", 18, theme["orange"], True)
 
     y = 394
-    # max_lines=6 matches geometry._assessment_extra_height()'s own
-    # wrap_text() call, so the panel grows to fit exactly what's about
-    # to be drawn here rather than truncating text a taller box already
-    # made room for.
-    for line in wrap_text(cfg["reason"], 350, 18, max_lines=6):
+    # max_lines=12 (not 6) — real AI-generated "2-3 sentence" reasons
+    # routinely run to 8-11 lines at this panel's 350px width, and the
+    # tighter cap was truncating mid-word ("...so pace at a fixe...").
+    # Matches geometry._assessment_extra_height()'s own wrap_text()
+    # call, so the panel grows to fit exactly what's about to be drawn
+    # here rather than truncating text a taller box already made room
+    # for.
+    for line in wrap_text(cfg["reason"], 350, 18, max_lines=12):
         graphics.text(draw, (658, y), line, 18, theme["white"])
         y += 18 + 7
     return draw

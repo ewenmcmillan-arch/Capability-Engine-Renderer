@@ -228,3 +228,22 @@ def test_verdict_strength_fits_a_full_realistic_sentence():
     from capability_renderer.layout import wrap_text
     lines = wrap_text(cfg["strength"], 330, 22, bold=True, max_lines=5)
     assert not lines[-1].endswith("…"), "A realistic one-sentence strength should fit without truncating"
+
+
+def test_assessment_reason_fits_a_realistic_multi_sentence_explanation():
+    """Real AI-generated 'reason' text (schema asks for 2-3 sentences)
+    routinely runs 8-11 lines at this panel's 350px width — a 6-line
+    cap was truncating mid-word ("...so pace at a fixe...") on a real
+    rendered card. max_lines=12 (and geometry._assessment_extra_height()
+    growing the panel to match) should fit a realistic reason in full."""
+    from capability_renderer.layout import wrap_text
+
+    reason = (
+        "4.90 mi in 44:41 at 9:07/mi on an average HR of 136 with a 150 peak is a clean, "
+        "well-controlled aerobic session — the longest sustained effort at this pace band "
+        "in the last week. But it is functionally a repeat of 8/06 (4.8 mi at a similar HR), "
+        "so pace at a fixed HR has not moved meaningfully in the last two weeks, which is "
+        "the real signal worth tracking here rather than the session score alone."
+    )
+    lines = wrap_text(reason, 350, 18, max_lines=12)
+    assert not lines[-1].endswith("…"), "A realistic multi-sentence reason should fit without truncating"
