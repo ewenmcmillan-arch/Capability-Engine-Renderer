@@ -8,13 +8,27 @@ from ..metrics import mission_pace_threshold_seconds
 
 
 def _route_colours(cfg: dict, metrics: dict, paces, theme: dict):
+    """Colour each segment by how close its pace sits to the mission
+    threshold, in *either* direction — deliberately symmetric rather
+    than "faster is always better". A one-directional "≤ threshold"
+    rule fits a tempo/quality mission fine, but silently scores a
+    recovery mission backwards: a mission whose success definition is
+    "hold pace honest and even without pressing" wants proximity to
+    the target, not speed past it — running faster than instructed
+    isn't success. See mission_percent() in the web app's
+    renderer_bridge.py, which uses the same band logic so the panel's
+    colours and the progress-ring percentage always agree."""
     threshold = mission_pace_threshold_seconds(cfg["mission_pace_threshold"])
     tolerance = int(cfg.get("near_pace_tolerance_seconds", 10))
     colours = []
     for pace in paces:
-        if pace is not None and pace <= threshold:
+        if pace is None:
+            colours.append(theme["grey"])
+            continue
+        diff = abs(pace - threshold)
+        if diff <= tolerance:
             colours.append(theme["green"])
-        elif pace is not None and pace <= threshold + tolerance:
+        elif diff <= tolerance * 2:
             colours.append(theme["orange"])
         else:
             colours.append(theme["grey"])
@@ -47,9 +61,9 @@ def render(img, draw: ImageDraw.ImageDraw, cfg: dict, metrics: dict, theme: dict
     key_y = 630
     tolerance = int(cfg.get("near_pace_tolerance_seconds", 10))
     entries = [
-        (theme["green"], "At mission pace", f"(≤ {cfg['mission_pace_threshold']}/mi)"),
-        (theme["orange"], "Near mission pace", f"(+{tolerance} sec/mi)"),
-        (theme["grey"], "Below mission pace", ""),
+        (theme["green"], "At mission pace", f"(±{tolerance}s of {cfg['mission_pace_threshold']}/mi)"),
+        (theme["orange"], "Near mission pace", f"(±{tolerance * 2}s)"),
+        (theme["grey"], "Off mission pace", ""),
     ]
     for colour, line1, line2 in entries:
         graphics.legend_swatch(draw, (54, key_y + 10, 82, key_y + 10), colour, 8)
