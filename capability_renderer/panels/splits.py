@@ -56,20 +56,21 @@ def _fit_rows(count: int, available_height: float) -> tuple[int, float, int]:
     return shown, pitch, font_size
 
 
-def render(img, draw: ImageDraw.ImageDraw, cfg: dict, metrics: dict, theme: dict, points=None, **_) -> ImageDraw.ImageDraw:
+def render(img, draw: ImageDraw.ImageDraw, cfg: dict, metrics: dict, theme: dict, points=None, offset: int = 0, **_) -> ImageDraw.ImageDraw:
     box = PANEL_BOXES["splits"]
     graphics.rounded_panel(draw, box, 18, theme["panel"], theme["blue"], 2)
-    graphics.text(draw, (40, 1222), "SPLITS", 20, theme["blue"], True)
+    graphics.text(draw, (40, 1222 + offset), "SPLITS", 20, theme["blue"], True)
 
     for label, x in [("MI", 42), ("PACE", 124), ("ELEV", 220), ("HR", 317)]:
-        graphics.text(draw, (x, 1262), label, 15, theme["muted"])
-    graphics.divider(draw, (40, 1290, 382, 1290), theme["line"], 1)
+        graphics.text(draw, (x, 1262 + offset), label, 15, theme["muted"])
+    graphics.divider(draw, (40, 1290 + offset, 382, 1290 + offset), theme["line"], 1)
 
     rows = cfg.get("splits") or (split_rows(points) if points else [])
-    available = box[3] - BOTTOM_MARGIN - START_Y
+    start_y = START_Y + offset
+    available = box[3] - BOTTOM_MARGIN - start_y
     shown, pitch, font_size = _fit_rows(len(rows), available)
 
-    y = START_Y
+    y = start_y
     for row in rows[:shown]:
         graphics.text(draw, (42, y), row["label"], font_size, theme["white"])
         pace = row["pace"] if isinstance(row.get("pace"), str) else _format_pace(row.get("pace"))

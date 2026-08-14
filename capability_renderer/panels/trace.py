@@ -52,13 +52,26 @@ def _draw_route_markers(draw, route, points, theme):
         graphics.marker(draw, finish, 11, theme["orange"], theme["white"], 3)
 
 
-def render(img, draw: ImageDraw.ImageDraw, cfg: dict, metrics: dict, theme: dict, points=None, paces=None, **_) -> ImageDraw.ImageDraw:
+def _shift_box(box, offset: int):
+    x0, y0, x1, y1 = box
+    return (x0, y0 + offset, x1, y1 + offset)
+
+
+def render(img, draw: ImageDraw.ImageDraw, cfg: dict, metrics: dict, theme: dict, points=None, paces=None, offset: int = 0, **_) -> ImageDraw.ImageDraw:
     box = PANEL_BOXES["trace"]
     graphics.rounded_panel(draw, box, 18, theme["panel_alt"], theme["blue"], 2)
-    graphics.text(draw, (44, 550), "MISSION TRACE", 21, theme["blue"], True)
+    graphics.text(draw, (44, 550 + offset), "MISSION TRACE", 21, theme["blue"], True)
 
-    graphics.rounded_panel(draw, TRACE_LEGEND_BOX, 14, theme["legend_bg"], theme["line"], 1)
-    key_y = 630
+    # offset shifts this whole panel's sub-regions down when
+    # mission/assessment above it grew — TRACE_LEGEND_BOX/ROUTE_BOX/
+    # PERCENT_BOX are otherwise-fixed sub-regions, unlike box itself
+    # (already grown by geometry.apply_dynamic_layout).
+    legend_box = _shift_box(TRACE_LEGEND_BOX, offset)
+    route_box = _shift_box(TRACE_ROUTE_BOX, offset)
+    percent_box = _shift_box(TRACE_PERCENT_BOX, offset)
+
+    graphics.rounded_panel(draw, legend_box, 14, theme["legend_bg"], theme["line"], 1)
+    key_y = 630 + offset
     tolerance = int(cfg.get("near_pace_tolerance_seconds", 10))
     entries = [
         (theme["green"], "At mission pace", f"(±{tolerance}s of {cfg['mission_pace_threshold']}/mi)"),
@@ -85,16 +98,16 @@ def render(img, draw: ImageDraw.ImageDraw, cfg: dict, metrics: dict, theme: dict
     graphics.marker(draw, (89, marker_cy), 9, theme["orange"], theme["white"], 2)
     graphics.text(draw, (110, marker_cy - 10), "Start / finish", 13, theme["white"])
 
-    graphics.grid(img, TRACE_ROUTE_BOX, theme["grid"])
+    graphics.grid(img, route_box, theme["grid"])
     draw = ImageDraw.Draw(img)
 
-    route = scale_route(points, TRACE_ROUTE_BOX, 26)
+    route = scale_route(points, route_box, 26)
     colours = _route_colours(cfg, metrics, paces, theme)
     graphics.route_polyline(draw, route, colours, width=8)
     _draw_route_markers(draw, route, points, theme)
 
     graphics.progress_ring_label(
-        draw, TRACE_PERCENT_BOX, theme["green"],
+        draw, percent_box, theme["green"],
         f"{cfg['mission_percent']}%",
         ["of route at", "mission pace"],
         theme["white"],
