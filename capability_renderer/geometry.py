@@ -84,7 +84,7 @@ def _mission_extra_height(cfg: dict) -> int:
 
 
 def _assessment_extra_height(cfg: dict) -> int:
-    lines = wrap_text(cfg.get("reason", ""), 350, 18, max_lines=6)
+    lines = wrap_text(cfg.get("reason", ""), 350, 18, max_lines=12)
     required = 260 + len(lines) * 25 + 16  # 394-134=260 relative start_y; 18+7=25 line pitch
     default_height = _LOCKED_BASE["assessment"][3] - _LOCKED_BASE["assessment"][1]
     return max(0, required - default_height)
