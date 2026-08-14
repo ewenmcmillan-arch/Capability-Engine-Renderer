@@ -173,3 +173,58 @@ def test_dynamic_layout_grows_canvas_for_long_content_without_overflow():
     px = below_footer.convert("RGB").getdata()
     white_ish = [p for p in px if p[0] > 200 and p[1] > 200 and p[2] > 200]
     assert len(white_ish) == 0, f"Found {len(white_ish)} light/text-coloured pixels below the grown card's footer"
+
+
+def test_mission_title_and_subtitle_never_cross_into_assessment_panel():
+    """Regression test for a real bug: mission title/subtitle were
+    drawn with a single graphics.text() call and no wrap or width
+    limit, so a long AI-generated subtitle drew straight past the
+    mission panel's right edge (612) and, once it crossed into the
+    assessment panel's box (628-1066), was only hidden where
+    assessment's own background happened to paint over it — leaving a
+    stray fragment of blue text visible past x=1066. Found by
+    rendering a real coaching session, not synthetic testing."""
+    from capability_renderer.geometry import PANEL_BOXES
+    from capability_renderer.panels import assessment, mission
+
+    img, draw, cfg, points, paces, theme = _setup()
+    cfg = dict(cfg)
+    cfg["mission"] = "A Very Long Auto-Generated Mission Title That Would Have Overrun The Old Fixed-Width Text"
+    cfg["mission_subtitle"] = "Hold controlled aerobic effort for about forty five minutes without letting pace drift into hard-work territory"
+
+    mission.render(img, draw, cfg, {}, theme)
+    assessment.render(img, draw, cfg, {}, theme)  # paints over anything that bled into its own box
+
+    box = PANEL_BOXES["mission"]
+    assessment_box = PANEL_BOXES["assessment"]
+    # Sample the gap between the two panels, plus everything to the
+    # right of the assessment panel — nothing from mission's title or
+    # subtitle should reach either region.
+    strip = img.crop((box[2], box[1], assessment_box[0] + 5, box[1] + 140))
+    px = strip.convert("RGB").getdata()
+    white_ish = [p for p in px if p[0] > 200 and p[1] > 200]
+    assert len(white_ish) == 0, "Mission title/subtitle text bled into the gap before the assessment panel"
+
+    beyond = img.crop((assessment_box[2], box[1], img.width, box[1] + 140))
+    px = beyond.convert("RGB").getdata()
+    white_ish = [p for p in px if p[0] > 200 and p[1] > 200]
+    assert len(white_ish) == 0, "Mission title/subtitle text bled past the assessment panel's right edge"
+
+
+def test_verdict_strength_fits_a_full_realistic_sentence():
+    """The coaching schema asks the AI for 'one sentence' for
+    strength, but real one-sentence output routinely needs more than
+    the original 2-line, 26pt cap — found truncating a real coaching
+    session's strength field mid-sentence."""
+    from capability_renderer.panels import verdict
+
+    img, draw, cfg, points, paces, theme = _setup()
+    cfg = dict(cfg)
+    cfg["strength"] = (
+        "Excellent effort discipline — you held pace honest through the middle miles "
+        "despite rolling terrain and a warm afternoon."
+    )
+    verdict.render(img, draw, cfg, {}, theme)
+    from capability_renderer.layout import wrap_text
+    lines = wrap_text(cfg["strength"], 330, 22, bold=True, max_lines=5)
+    assert not lines[-1].endswith("…"), "A realistic one-sentence strength should fit without truncating"
