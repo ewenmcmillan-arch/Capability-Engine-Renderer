@@ -25,13 +25,16 @@ def _setup():
 def test_every_panel_renders_without_error():
     img, draw, cfg, points, paces, theme = _setup()
     computed = {"paces": paces}
-    for panel in PANEL_ORDER:
-        draw = panel.render(img, draw, cfg, computed, theme, points=points, paces=paces)
+    for name, panel in PANEL_ORDER:
+        draw = panel.render(img, draw, cfg, computed, theme, points=points, paces=paces, offset=0)
         assert draw is not None
 
 
 def test_panel_order_matches_locked_layout_sections():
-    names = [p.__name__.rsplit(".", 1)[-1] for p in PANEL_ORDER]
+    # PANEL_ORDER pairs each module with the PANEL_BOXES key
+    # apply_dynamic_layout() reports an offset for (see render.py) —
+    # module names still match the locked v1.2 draw order.
+    names = [module.__name__.rsplit(".", 1)[-1] for _, module in PANEL_ORDER]
     assert names == [
         "header", "mission", "assessment", "trace", "verdict",
         "summary", "splits", "recovery", "elevation", "footer",
@@ -104,3 +107,69 @@ def test_splits_panel_shows_all_rows_without_overflowing():
     px = below_box.convert("RGB").getdata()
     white_ish = [p for p in px if p[0] > 200 and p[1] > 200 and p[2] > 200]
     assert len(white_ish) == 0, f"Found {len(white_ish)} light/text-coloured pixels below the splits panel's bottom border"
+
+
+def test_dynamic_layout_keeps_locked_height_for_short_content():
+    """The locked v1.2 fixture's content already fits the original
+    boxes, so apply_dynamic_layout() must add zero extra height —
+    pixel-parity guard: this shouldn't regress the common case."""
+    from capability_renderer.geometry import H, apply_dynamic_layout
+
+    cfg = json.loads(FIXTURE_CFG.read_text())
+    offsets, canvas_height = apply_dynamic_layout(cfg)
+    assert canvas_height == H
+    assert all(v == 0 for v in offsets.values())
+
+
+def test_dynamic_layout_grows_canvas_for_long_content_without_overflow():
+    """Real (often AI-generated) mission/assessment/coach text runs
+    longer than the locked fixture's — the whole card should grow
+    downward to fit it rather than let panels draw past their own
+    borders. Renders the full pipeline (not just one panel) so the
+    cascade through every panel below mission/assessment/verdict is
+    exercised end to end."""
+    from capability_renderer import render as render_mod
+    from capability_renderer.geometry import H, PANEL_BOXES
+
+    cfg = json.loads(FIXTURE_CFG.read_text())
+    cfg["success_definition"] = [
+        "Hold every mile within ten seconds of the prescribed recovery pace band all the way round",
+        "Keep cadence steady above 170 spm even as fatigue accumulates in the closing miles",
+        "Finish with heart rate recovery of at least twenty five beats within two minutes",
+        "Avoid any single mile split drifting more than thirty seconds off the mission target",
+    ]
+    cfg["reason"] = (
+        "Splits were tight to the recovery band for most of the run, drifting only in the "
+        "final mile as fatigue set in on the last climb, a normal pattern for this profile."
+    )
+    cfg["strength"] = "Excellent pacing discipline through the middle miles on rolling terrain"
+    cfg["next_focus"] = (
+        "Work on maintaining composure and pace control in the closing stages, particularly "
+        "on climbs, where today showed the first signs of drift under fatigue."
+    )
+    cfg["coach_notes"] = (
+        "Cadence solid throughout. Heart rate recovery well managed on the climbs, and the "
+        "aerobic engine looked strong across the whole session given the humidity today."
+    )
+    points = render_mod.parse_gpx(FIXTURE_GPX)
+
+    img, draw, _cfg, _points, paces, theme = _setup()
+    computed = {"paces": paces}
+    offsets, canvas_height = render_mod.apply_dynamic_layout(cfg)
+    assert canvas_height > H, "long content should grow the canvas, not just get clipped"
+
+    from PIL import Image as PILImage
+    grown_img = PILImage.new("RGBA", (W, canvas_height), theme["bg"])
+    grown_draw = ImageDraw.Draw(grown_img)
+    for name, panel in PANEL_ORDER:
+        grown_draw = panel.render(
+            grown_img, grown_draw, cfg, computed, theme,
+            points=points, paces=paces, offset=offsets[name],
+        )
+
+    # Nothing should draw past the final panel's (grown) bottom edge.
+    footer_box = PANEL_BOXES["footer"]
+    below_footer = grown_img.crop((footer_box[0], footer_box[3] + 3, footer_box[2], min(footer_box[3] + 20, canvas_height)))
+    px = below_footer.convert("RGB").getdata()
+    white_ish = [p for p in px if p[0] > 200 and p[1] > 200 and p[2] > 200]
+    assert len(white_ish) == 0, f"Found {len(white_ish)} light/text-coloured pixels below the grown card's footer"

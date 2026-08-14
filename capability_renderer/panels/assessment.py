@@ -22,7 +22,11 @@ def render(img, draw: ImageDraw.ImageDraw, cfg: dict, metrics: dict, theme: dict
     graphics.text(draw, (658, 360), "REASON", 18, theme["orange"], True)
 
     y = 394
-    for line in wrap_text(cfg["reason"], 350, 18, max_lines=4):
+    # max_lines=6 matches geometry._assessment_extra_height()'s own
+    # wrap_text() call, so the panel grows to fit exactly what's about
+    # to be drawn here rather than truncating text a taller box already
+    # made room for.
+    for line in wrap_text(cfg["reason"], 350, 18, max_lines=6):
         graphics.text(draw, (658, y), line, 18, theme["white"])
         y += 18 + 7
     return draw

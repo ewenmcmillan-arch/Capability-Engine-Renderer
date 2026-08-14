@@ -17,23 +17,26 @@ from xml.etree import ElementTree as ET
 from PIL import Image, ImageDraw
 
 from . import export, metrics as metrics_mod, panels, validation
-from .geometry import W, H
+from .geometry import W, apply_dynamic_layout
 from .theme import load_theme
 
 # Panel render order — matches the locked v1.2 draw order exactly.
 # Adding a new card section means adding one entry here and a
 # matching panels/<name>.py module; nothing else in this file changes.
+# Each entry pairs the module with the PANEL_BOXES key apply_dynamic_
+# layout() reports an offset for, so render() can pass that panel the
+# offset it needs to add to its own hardcoded absolute y-coordinates.
 PANEL_ORDER = [
-    panels.header,
-    panels.mission,
-    panels.assessment,
-    panels.trace,
-    panels.verdict,
-    panels.summary,
-    panels.splits,
-    panels.recovery,
-    panels.elevation,
-    panels.footer,
+    ("header", panels.header),
+    ("mission", panels.mission),
+    ("assessment", panels.assessment),
+    ("trace", panels.trace),
+    ("verdict", panels.verdict),
+    ("metrics_strip", panels.summary),
+    ("splits", panels.splits),
+    ("recovery", panels.recovery),
+    ("elevation", panels.elevation),
+    ("footer", panels.footer),
 ]
 
 
@@ -99,15 +102,24 @@ def render(config_path, gpx_path, output_path, theme_name: str = "default") -> P
         "elevation": elevation,
     }
 
-    # 4. Layout (panel boxes are the locked geometry; panels do their
-    #    own internal text layout via layout.py as they draw)
+    # 4. Layout — panel boxes start from the locked v1.2 geometry, but
+    #    mission/assessment/verdict can grow to fit real content (see
+    #    geometry.apply_dynamic_layout's docstring); that growth
+    #    cascades to every panel below and to the canvas height itself,
+    #    since it's fine for the card to extend downward on a phone
+    #    screen. Panels do their own internal text layout via layout.py
+    #    as they draw.
     theme = load_theme(theme_name)
+    offsets, canvas_height = apply_dynamic_layout(cfg)
 
     # 5. Render panels
-    img = Image.new("RGBA", (W, H), theme["bg"])
+    img = Image.new("RGBA", (W, canvas_height), theme["bg"])
     draw = ImageDraw.Draw(img)
-    for panel in PANEL_ORDER:
-        draw = panel.render(img, draw, cfg, computed_metrics, theme, points=points, paces=paces)
+    for name, panel in PANEL_ORDER:
+        draw = panel.render(
+            img, draw, cfg, computed_metrics, theme,
+            points=points, paces=paces, offset=offsets[name],
+        )
 
     # 6. Export
     return export.export_png(img, output_path)

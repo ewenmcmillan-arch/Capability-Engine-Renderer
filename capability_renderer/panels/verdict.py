@@ -7,14 +7,17 @@ from ..geometry import PANEL_BOXES
 from ..layout import lines_that_fit, wrap_text
 
 
-def render(img, draw: ImageDraw.ImageDraw, cfg: dict, metrics: dict, theme: dict, **_) -> ImageDraw.ImageDraw:
+def render(img, draw: ImageDraw.ImageDraw, cfg: dict, metrics: dict, theme: dict, offset: int = 0, **_) -> ImageDraw.ImageDraw:
     box = PANEL_BOXES["verdict"]
     graphics.rounded_panel(draw, box, 18, theme["panel"], theme["green"], 2)
 
-    graphics.text(draw, (700, 550), "COACH'S VERDICT", 21, theme["green"], True)
-    graphics.text(draw, (700, 605), "STRENGTH", 17, theme["green"], True)
+    # offset shifts this panel's row down when mission/assessment above
+    # it grew — everything below these three literals derives its y
+    # from local variables, so it cascades automatically.
+    graphics.text(draw, (700, 550 + offset), "COACH'S VERDICT", 21, theme["green"], True)
+    graphics.text(draw, (700, 605 + offset), "STRENGTH", 17, theme["green"], True)
 
-    y = 638
+    y = 638 + offset
     for line in wrap_text(cfg["strength"], 330, 26, bold=True, max_lines=2):
         graphics.text(draw, (700, y), line, 26, theme["white"], True)
         y += 26 + 6
