@@ -230,6 +230,29 @@ def test_verdict_strength_fits_a_full_realistic_sentence():
     assert not lines[-1].endswith("…"), "A realistic one-sentence strength should fit without truncating"
 
 
+def test_verdict_next_focus_fits_a_full_realistic_sentence():
+    """The coaching schema asks the AI for '1-2 sentences (~220
+    characters)' for next_focus — worse off than strength ever was,
+    since it targets *more* text than strength's 140 characters but
+    was still capped at max_lines=4 (vs. strength's already-fixed 5).
+    A realistic ~220-character next_focus wraps to 7-8 lines at this
+    panel's 330px width/20pt size, not 4 — found truncating a real
+    coaching session's next_focus mid-sentence."""
+    from capability_renderer.panels import verdict
+
+    img, draw, cfg, points, paces, theme = _setup()
+    cfg = dict(cfg)
+    cfg["next_focus"] = (
+        "Prioritise the overdue quality session this week — you have not run a tempo or "
+        "interval effort in over ten days, and the taper window for Wigan 10k opens in two "
+        "weeks, so this is the last real chance to sharpen before backing off volume."
+    )
+    verdict.render(img, draw, cfg, {}, theme)
+    from capability_renderer.layout import wrap_text
+    lines = wrap_text(cfg["next_focus"], 330, 20, max_lines=10)
+    assert not lines[-1].endswith("…"), "A realistic next_focus should fit without truncating"
+
+
 def test_assessment_reason_fits_a_realistic_multi_sentence_explanation():
     """Real AI-generated 'reason' text (schema asks for 2-3 sentences)
     routinely runs 8-11 lines at this panel's 350px width — a 6-line
