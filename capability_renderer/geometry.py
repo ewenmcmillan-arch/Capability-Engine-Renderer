@@ -94,7 +94,7 @@ def _verdict_extra_height(cfg: dict) -> int:
     strength_lines = wrap_text(cfg.get("strength", ""), 330, 22, bold=True, max_lines=5)
     y = 114 + len(strength_lines) * 28  # 638-524=114 relative start_y; 22+6=28 line pitch
     divider1_y = y - 6 + 10
-    next_lines = wrap_text(cfg.get("next_focus", ""), 330, 20, max_lines=4)
+    next_lines = wrap_text(cfg.get("next_focus", ""), 330, 20, max_lines=10)
     y = divider1_y + 66 + len(next_lines) * 28  # 20+8=28 line pitch
     ny = y + 86
     notes_lines = wrap_text(cfg.get("coach_notes") or "", 330, 18, max_lines=10)

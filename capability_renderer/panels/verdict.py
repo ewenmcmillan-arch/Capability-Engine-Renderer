@@ -41,7 +41,15 @@ def render(img, draw: ImageDraw.ImageDraw, cfg: dict, metrics: dict, theme: dict
 
     graphics.text(draw, (700, divider1_y + 32), "NEXT FOCUS", 17, theme["green"], True)
     y = divider1_y + 66
-    for line in wrap_text(cfg["next_focus"], 330, 20, max_lines=4):
+    # max_lines=10 (not the original 4) — same fix as STRENGTH above and
+    # "reason" in assessment.py: the coaching schema asks for "1-2
+    # sentences (~220 characters)" for next_focus, but real output at
+    # that length routinely wraps to 7-8 lines at this panel's 330px
+    # width/20pt size, not 4 — found truncating a real coaching session's
+    # next_focus mid-sentence. The panel grows to fit via geometry.
+    # apply_dynamic_layout() (kept in sync with this size/max_lines), so
+    # there's no fixed-box reason to keep this tight.
+    for line in wrap_text(cfg["next_focus"], 330, 20, max_lines=10):
         graphics.text(draw, (700, y), line, 20, theme["white"])
         y += 20 + 8
     graphics.divider(draw, (700, y + 18, 1036, y + 18), theme["green"], 2)
