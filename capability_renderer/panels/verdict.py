@@ -3,7 +3,7 @@ from __future__ import annotations
 from PIL import ImageDraw
 
 from .. import graphics
-from ..geometry import PANEL_BOXES
+from ..geometry import DEFAULT_COACH_NOTES, PANEL_BOXES
 from ..layout import lines_that_fit, wrap_text
 
 
@@ -55,7 +55,12 @@ def render(img, draw: ImageDraw.ImageDraw, cfg: dict, metrics: dict, theme: dict
     graphics.divider(draw, (700, y + 18, 1036, y + 18), theme["green"], 2)
 
     graphics.text(draw, (700, y + 52), "NOTES", 17, theme["green"], True)
-    notes = cfg.get("coach_notes", "Cadence solid. Heart rate well managed on the climbs. Good finish.")
+    # `or`, not a .get() default — an explicitly empty string (e.g. a
+    # form submitted with the field left blank) needs the same
+    # fallback as a genuinely missing key, and _verdict_extra_height()
+    # in geometry.py must resolve this identically or the panel isn't
+    # grown enough for what actually gets drawn here.
+    notes = cfg.get("coach_notes") or DEFAULT_COACH_NOTES
     ny = y + 86
     # Available lines depend on how much room STRENGTH/NEXT FOCUS already
     # used above — a fixed max_lines=5 here overflowed the panel's fixed

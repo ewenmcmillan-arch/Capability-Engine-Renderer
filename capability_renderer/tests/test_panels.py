@@ -85,6 +85,27 @@ def test_verdict_panel_notes_never_overflow_the_box_bottom():
     assert len(white_ish) == 0, f"Found {len(white_ish)} light/text-coloured pixels below the verdict panel's bottom border"
 
 
+def test_verdict_extra_height_treats_missing_notes_same_as_default_notes():
+    """Regression test: geometry._verdict_extra_height() used to treat
+    a missing/empty coach_notes as literally empty text, budgeting
+    near-zero space for the NOTES section — but verdict.py's render()
+    substitutes DEFAULT_COACH_NOTES (a real, multi-line sentence) in
+    that exact case. Found live: a real mission card whose form
+    submission dropped coach_notes entirely (a separate bug in
+    render_submit's NARRATIVE_FIELDS list) rendered that fallback
+    sentence truncated to a single ellipsized line, because the panel
+    was only grown to fit an empty string. The two call sites must
+    agree on what "no coach_notes" resolves to."""
+    from capability_renderer.geometry import DEFAULT_COACH_NOTES, _verdict_extra_height
+
+    cfg_missing = {"strength": "", "next_focus": ""}
+    cfg_empty = {"strength": "", "next_focus": "", "coach_notes": ""}
+    cfg_explicit_default = {"strength": "", "next_focus": "", "coach_notes": DEFAULT_COACH_NOTES}
+
+    assert _verdict_extra_height(cfg_missing) == _verdict_extra_height(cfg_explicit_default)
+    assert _verdict_extra_height(cfg_empty) == _verdict_extra_height(cfg_explicit_default)
+
+
 def test_splits_panel_shows_all_rows_without_overflowing():
     """Regression test: split_rows() used to hard-cap at 4 rows to
     match the panel's fixed layout, silently dropping the back half

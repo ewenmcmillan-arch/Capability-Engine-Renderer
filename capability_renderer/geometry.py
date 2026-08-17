@@ -57,6 +57,18 @@ TRACE_PERCENT_BOX: Box = (38, 820, 216, 952)
 
 MILE_METRES = 1609.344
 
+# Shared between panels/verdict.py (what actually gets drawn) and
+# _verdict_extra_height() below (how much room that drawing needs) —
+# living in one place so the two can never drift apart again. Real
+# bug this fixes: verdict.py substituted this fallback sentence
+# whenever cfg["coach_notes"] was missing/empty, but
+# _verdict_extra_height() budgeted layout space as if notes were
+# empty in that same case (it didn't know about the fallback text at
+# all) — so the panel wasn't grown enough, and the fallback sentence
+# itself got truncated to a single ellipsized line by
+# lines_that_fit()'s resulting tiny budget.
+DEFAULT_COACH_NOTES = "Cadence solid. Heart rate well managed on the climbs. Good finish."
+
 
 # --- Dynamic layout: grow panels to fit real content -----------------------
 # Real (often AI-generated) mission/assessment/coach text routinely runs
@@ -97,7 +109,7 @@ def _verdict_extra_height(cfg: dict) -> int:
     next_lines = wrap_text(cfg.get("next_focus", ""), 330, 20, max_lines=10)
     y = divider1_y + 66 + len(next_lines) * 28  # 20+8=28 line pitch
     ny = y + 86
-    notes_lines = wrap_text(cfg.get("coach_notes") or "", 330, 18, max_lines=10)
+    notes_lines = wrap_text(cfg.get("coach_notes") or DEFAULT_COACH_NOTES, 330, 18, max_lines=10)
     required = ny + len(notes_lines) * 25 + 16  # 18+7=25 line pitch
     default_height = _LOCKED_BASE["verdict"][3] - _LOCKED_BASE["verdict"][1]
     return max(0, required - default_height)
