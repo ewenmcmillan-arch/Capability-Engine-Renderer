@@ -11,6 +11,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import List
 
+from ..geometry import DEFAULT_COACH_NOTES
+
 
 @dataclass
 class Mission:
@@ -39,5 +41,5 @@ class Mission:
             next_focus=cfg["next_focus"],
             mission_subtitle=cfg.get("mission_subtitle", ""),
             success_definition=cfg.get("success_definition", []),
-            coach_notes=cfg.get("coach_notes", "Cadence solid. Heart rate well managed on the climbs. Good finish."),
+            coach_notes=cfg.get("coach_notes") or DEFAULT_COACH_NOTES,
         )
