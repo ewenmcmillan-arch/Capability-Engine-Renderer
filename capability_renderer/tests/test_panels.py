@@ -247,8 +247,30 @@ def test_verdict_strength_fits_a_full_realistic_sentence():
     )
     verdict.render(img, draw, cfg, {}, theme)
     from capability_renderer.layout import wrap_text
-    lines = wrap_text(cfg["strength"], 330, 22, bold=True, max_lines=5)
+    lines = wrap_text(cfg["strength"], 330, 22, bold=True, max_lines=9)
     assert not lines[-1].endswith("…"), "A realistic one-sentence strength should fit without truncating"
+
+
+def test_verdict_strength_fits_a_realistic_compound_sentence():
+    """max_lines=5 (the previous cap) still truncated a real compound
+    one-sentence strength mid-clause ("...shows real efficiency at
+    submaximal…") once coaching.py stopped hard-clipping the field's
+    character count upstream — a genuinely longer "one sentence" (with
+    a comparison clause, as the coaching schema's own examples produce)
+    needs more than 5 lines at this panel's 330px/22pt-bold size."""
+    from capability_renderer.panels import verdict
+
+    img, draw, cfg, points, paces, theme = _setup()
+    cfg = dict(cfg)
+    cfg["strength"] = (
+        "Excellent aerobic control — 136 average heart rate at 9:07 per mile moving pace in "
+        "warm, humid air shows real efficiency at submaximal effort, meaningfully stronger "
+        "than similar-heart-rate runs from a month ago."
+    )
+    verdict.render(img, draw, cfg, {}, theme)
+    from capability_renderer.layout import wrap_text
+    lines = wrap_text(cfg["strength"], 330, 22, bold=True, max_lines=9)
+    assert not lines[-1].endswith("…"), "A realistic compound-sentence strength should fit without truncating"
 
 
 def test_verdict_next_focus_fits_a_full_realistic_sentence():
@@ -291,3 +313,29 @@ def test_assessment_reason_fits_a_realistic_multi_sentence_explanation():
     )
     lines = wrap_text(reason, 350, 18, max_lines=12)
     assert not lines[-1].endswith("…"), "A realistic multi-sentence reason should fit without truncating"
+
+
+def test_verdict_notes_fits_a_realistic_multi_sentence_coach_notes():
+    """Real AI-generated 'coach_notes' text (schema asks for 2-4
+    sentences) was truncating mid-word ("...One race-pace session in
+    the next few days woul…") once coaching.py stopped hard-clipping
+    the field's character count upstream — the renderer's own budget
+    for how much room to grow NOTES by (geometry._verdict_extra_height,
+    max_lines=16, up from 10) needs to comfortably cover a realistic
+    multi-sentence coach's-notes paragraph, not just the shorter text
+    the old 320-character clip used to guarantee."""
+    from capability_renderer.panels import verdict
+
+    img, draw, cfg, points, paces, theme = _setup()
+    cfg = dict(cfg)
+    cfg["coach_notes"] = (
+        "Aerobic speed is trending the right way — 9:07 per mile at 136 average heart rate is "
+        "stronger than similar-heart-rate runs from a month ago. On sub-55 10k readiness: "
+        "plausible but tight, since 8:31-8:45 pace has only been demonstrated over 4 miles, "
+        "never the full 6.2. One race-pace session in the next few days would meaningfully "
+        "firm up that projection before the taper window closes."
+    )
+    verdict.render(img, draw, cfg, {}, theme)
+    from capability_renderer.layout import wrap_text
+    lines = wrap_text(cfg["coach_notes"], 330, 18, max_lines=16)
+    assert not lines[-1].endswith("…"), "A realistic multi-sentence coach_notes should fit without truncating"
