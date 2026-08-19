@@ -103,13 +103,26 @@ def _assessment_extra_height(cfg: dict) -> int:
 
 
 def _verdict_extra_height(cfg: dict) -> int:
-    strength_lines = wrap_text(cfg.get("strength", ""), 330, 22, bold=True, max_lines=5)
+    # max_lines here must match panels/verdict.py's own wrap_text()
+    # calls exactly (strength=9, next_focus=10) — this function exists
+    # purely to measure how tall verdict.py is about to draw, using
+    # the same wrapping math. notes_lines' max_lines=16 (not 10) is
+    # a real bump too, not just kept in sync: with strength/coach_notes
+    # no longer hard-clipped upstream (coaching.py), a real coach_notes
+    # routinely needs more than 10 lines once strength/next_focus have
+    # already used their share of the panel — 10 was still cutting a
+    # real NOTES section off mid-word ("...woul…"). This is a budget
+    # for how much room to *grow the panel by*, not a hard cap on what
+    # verdict.py itself draws (that's lines_that_fit(), sized from
+    # whatever the box ends up being after this function runs) — so a
+    # generous number here costs nothing but panel height.
+    strength_lines = wrap_text(cfg.get("strength", ""), 330, 22, bold=True, max_lines=9)
     y = 114 + len(strength_lines) * 28  # 638-524=114 relative start_y; 22+6=28 line pitch
     divider1_y = y - 6 + 10
     next_lines = wrap_text(cfg.get("next_focus", ""), 330, 20, max_lines=10)
     y = divider1_y + 66 + len(next_lines) * 28  # 20+8=28 line pitch
     ny = y + 86
-    notes_lines = wrap_text(cfg.get("coach_notes") or DEFAULT_COACH_NOTES, 330, 18, max_lines=10)
+    notes_lines = wrap_text(cfg.get("coach_notes") or DEFAULT_COACH_NOTES, 330, 18, max_lines=16)
     required = ny + len(notes_lines) * 25 + 16  # 18+7=25 line pitch
     default_height = _LOCKED_BASE["verdict"][3] - _LOCKED_BASE["verdict"][1]
     return max(0, required - default_height)
