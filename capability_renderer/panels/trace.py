@@ -7,25 +7,58 @@ from ..geometry import PANEL_BOXES, TRACE_LEGEND_BOX, TRACE_PERCENT_BOX, TRACE_R
 from ..metrics import mission_pace_threshold_seconds
 
 
+def _pace_distance(pace: float, threshold: int, direction: str) -> float:
+    """How far `pace` sits from the "good" side of `threshold`, given
+    the mission's own pace_direction — 0 means fully on the good side
+    (never penalised, however far past the threshold that goes),
+    positive means genuinely off, in seconds/mile.
+
+    - "ceiling" (e.g. "average pace at or under 9:15/mi"): any pace at
+      or faster than the threshold is 0 — running faster than asked
+      is success, not something to mark down for being far from the
+      threshold. Only running *slower* than threshold counts against
+      it.
+    - "floor" (e.g. a long run's "don't go faster than 10:00/mi"):
+      the mirror image — at or slower than threshold is 0, only
+      running *faster* counts against it.
+    - "band" (default, e.g. a recovery mission's "hold pace honest and
+      even without pressing"): the original symmetric behaviour —
+      distance in *either* direction counts, since neither faster nor
+      slower than the target is what the mission is asking for.
+
+    Real bug this fixes: a mission whose own success_definition reads
+    "average pace at or under 9:15/mi" (a ceiling) was still scored
+    with the old symmetric band, so an athlete who ran fast intervals
+    well under target saw those miles marked "off mission pace" —
+    the "% at mission pace" badge could read as low as 15% on a run
+    that had already satisfied its own stated success definition on
+    average. See mission_percent() in the web app's renderer_bridge.py,
+    which applies this exact same function so the panel's colours and
+    the progress-ring percentage always agree."""
+    diff = pace - threshold
+    if direction == "ceiling":
+        return max(0.0, diff)
+    if direction == "floor":
+        return max(0.0, -diff)
+    return abs(diff)
+
+
 def _route_colours(cfg: dict, metrics: dict, paces, theme: dict):
-    """Colour each segment by how close its pace sits to the mission
-    threshold, in *either* direction — deliberately symmetric rather
-    than "faster is always better". A one-directional "≤ threshold"
-    rule fits a tempo/quality mission fine, but silently scores a
-    recovery mission backwards: a mission whose success definition is
-    "hold pace honest and even without pressing" wants proximity to
-    the target, not speed past it — running faster than instructed
-    isn't success. See mission_percent() in the web app's
-    renderer_bridge.py, which uses the same band logic so the panel's
-    colours and the progress-ring percentage always agree."""
+    """Colour each segment by how far its pace sits from the "good"
+    side of the mission threshold — see _pace_distance() for what
+    "good side" means for this mission's own pace_direction (ceiling/
+    floor/band). Defaults to "band" (the original behaviour) when a
+    config doesn't carry the field at all, so an older saved config
+    renders exactly as it always did."""
     threshold = mission_pace_threshold_seconds(cfg["mission_pace_threshold"])
     tolerance = int(cfg.get("near_pace_tolerance_seconds", 10))
+    direction = cfg.get("mission_pace_direction") or "band"
     colours = []
     for pace in paces:
         if pace is None:
             colours.append(theme["grey"])
             continue
-        diff = abs(pace - threshold)
+        diff = _pace_distance(pace, threshold, direction)
         if diff <= tolerance:
             colours.append(theme["green"])
         elif diff <= tolerance * 2:
@@ -33,6 +66,34 @@ def _route_colours(cfg: dict, metrics: dict, paces, theme: dict):
         else:
             colours.append(theme["grey"])
     return colours
+
+
+def _legend_entries(cfg: dict, tolerance: int, theme: dict):
+    """Legend text describing the same _pace_distance() rule the
+    route's actually coloured with — kept in sync deliberately (see
+    _route_colours()'s docstring): a "ceiling" mission's legend
+    shouldn't claim a symmetric ±Ns band when running faster than
+    threshold is never actually penalised."""
+    direction = cfg.get("mission_pace_direction") or "band"
+    mission_pace = cfg["mission_pace_threshold"]
+    # Kept roughly the same length as the "band" case's original text
+    # below — this renders in TRACE_LEGEND_BOX, a fixed-width sub-
+    # region with no wrapping, so a much longer string would run past
+    # its edge.
+    if direction == "ceiling":
+        green_note = f"(≤ {mission_pace}/mi, +{tolerance}s)"
+        orange_note = f"(+{tolerance}-{tolerance * 2}s slower)"
+    elif direction == "floor":
+        green_note = f"(≥ {mission_pace}/mi, -{tolerance}s)"
+        orange_note = f"({tolerance}-{tolerance * 2}s faster)"
+    else:
+        green_note = f"(±{tolerance}s of {mission_pace}/mi)"
+        orange_note = f"(±{tolerance * 2}s)"
+    return [
+        (theme["green"], "At mission pace", green_note),
+        (theme["orange"], "Near mission pace", orange_note),
+        (theme["grey"], "Off mission pace", ""),
+    ]
 
 
 def _draw_route_markers(draw, route, points, theme):
@@ -73,11 +134,7 @@ def render(img, draw: ImageDraw.ImageDraw, cfg: dict, metrics: dict, theme: dict
     graphics.rounded_panel(draw, legend_box, 14, theme["legend_bg"], theme["line"], 1)
     key_y = 630 + offset
     tolerance = int(cfg.get("near_pace_tolerance_seconds", 10))
-    entries = [
-        (theme["green"], "At mission pace", f"(±{tolerance}s of {cfg['mission_pace_threshold']}/mi)"),
-        (theme["orange"], "Near mission pace", f"(±{tolerance * 2}s)"),
-        (theme["grey"], "Off mission pace", ""),
-    ]
+    entries = _legend_entries(cfg, tolerance, theme)
     for colour, line1, line2 in entries:
         graphics.legend_swatch(draw, (54, key_y + 10, 82, key_y + 10), colour, 8)
         graphics.text(draw, (96, key_y), line1, 14, theme["white"])
