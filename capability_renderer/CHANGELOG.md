@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased — moving-time splits
+
+- **Splits counted stopped time as running:** `split_rows()` used
+  elapsed clock time between mile marks, so every stop (a road
+  crossing, a recovery pause) was counted as very slow running. Found
+  live (2026-10-08): a run with ~2 min of short stops showed miles 2-3
+  at 9:43 and 10:12 where Strava showed 9:06 and 9:02. New
+  `metrics.moving_durations()` treats a long gap between points (>= 8s,
+  or 4x the activity's median sampling interval for smart-recording
+  watches) and near-stationary samples (< 0.5 m/s) as stopped; splits
+  now come out within ~5s/mi of Strava's on the same run.
+
 ## Unreleased — bug fixes from real-GPX testing
 
 Found and fixed while testing against a real Strava-exported GPX
