@@ -16,9 +16,48 @@ gpxtpx:cad extension.
 """
 from __future__ import annotations
 
+from statistics import median
 from typing import Dict, List, Optional, Sequence
 
 from .geometry import MILE_METRES, haversine
+
+# Moving time, not elapsed clock time. A GPX built from Strava streams
+# keeps elapsed timestamps but drops stopped samples, so a stop shows
+# up as one long gap between consecutive points; watches with auto-
+# pause produce the same shape. A gap at least this long (or this many
+# times the activity's normal sampling interval, for smart-recording
+# devices that log every few seconds) counts as stopped time. Samples
+# slower than STATIONARY_SPEED_MPS (standing, shuffling at a crossing)
+# don't count either. Found live (2026-10-08): a run with ~2 min of
+# short stops showed splits of 9:43 and 10:12 where Strava showed 9:06
+# and 9:02; with these values the same run comes out within ~5s/mi of
+# Strava's moving-time splits.
+PAUSE_GAP_MIN_SECONDS = 8.0
+PAUSE_GAP_MEDIAN_MULTIPLE = 4
+STATIONARY_SPEED_MPS = 0.5
+
+
+def moving_durations(points: Sequence[dict]) -> List[Optional[float]]:
+    """Seconds of genuine movement for each segment between consecutive
+    points (None where either timestamp is missing) — 0 for a pause gap
+    or a near-stationary sample, the raw interval otherwise."""
+    raw: List[Optional[float]] = []
+    for a, b in zip(points, points[1:]):
+        raw.append((b["time"] - a["time"]).total_seconds() if a["time"] and b["time"] else None)
+    intervals = [d for d in raw if d and d > 0]
+    if not intervals:
+        return raw
+    gap = max(PAUSE_GAP_MIN_SECONDS, PAUSE_GAP_MEDIAN_MULTIPLE * median(intervals))
+
+    moving: List[Optional[float]] = []
+    for (a, b), duration in zip(zip(points, points[1:]), raw):
+        if duration is None or duration <= 0:
+            moving.append(duration)
+        elif duration >= gap or haversine(a["lat"], a["lon"], b["lat"], b["lon"]) / duration < STATIONARY_SPEED_MPS:
+            moving.append(0.0)
+        else:
+            moving.append(duration)
+    return moving
 
 
 def smoothed_paces(points: Sequence[dict], radius: int = 3) -> List[Optional[float]]:
@@ -46,11 +85,13 @@ def split_rows(points: Sequence[dict]) -> List[dict]:
     final partial-mile remainder, for the whole route — no cap here.
     The splits panel decides how many of these it can fit legibly;
     see panels/splits.py's own row-count cap for why that's a
-    display concern, not a metrics one."""
+    display concern, not a metrics one. Pace is moving-time pace (see
+    moving_durations()), matching Strava's own splits."""
     cumulative = [0.0]
     for a, b in zip(points, points[1:]):
         cumulative.append(cumulative[-1] + haversine(a["lat"], a["lon"], b["lat"], b["lon"]))
     total = cumulative[-1]
+    moving = moving_durations(points)
 
     marks: List[float] = []
     marker = MILE_METRES
@@ -61,12 +102,13 @@ def split_rows(points: Sequence[dict]) -> List[dict]:
 
     rows: List[dict] = []
     start_i, start_d = 0, 0.0
-    start_t, start_e = points[0]["time"], points[0]["ele"]
+    start_e = points[0]["ele"]
     for number, mark in enumerate(marks, 1):
         index = next((i for i, v in enumerate(cumulative) if v >= mark), len(cumulative) - 1)
         segment_distance = mark - start_d
-        end_t, end_e = points[index]["time"], points[index]["ele"]
-        elapsed = (end_t - start_t).total_seconds() if start_t and end_t else None
+        end_e = points[index]["ele"]
+        durations = moving[start_i:index]
+        elapsed = None if any(d is None for d in durations) else sum(durations)
         pace = elapsed / (segment_distance / MILE_METRES) if elapsed and segment_distance else None
         heart_rates = [p["hr"] for p in points[start_i:index + 1] if p["hr"]]
         rows.append({
@@ -75,7 +117,7 @@ def split_rows(points: Sequence[dict]) -> List[dict]:
             "elev": None if start_e is None or end_e is None else (end_e - start_e) * 3.28084,
             "hr": round(sum(heart_rates) / len(heart_rates)) if heart_rates else None,
         })
-        start_i, start_d, start_t, start_e = index, mark, end_t, end_e
+        start_i, start_d, start_e = index, mark, end_e
     return rows
 
 
